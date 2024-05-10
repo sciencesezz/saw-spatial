@@ -1,0 +1,37 @@
+#!bin/bash
+
+#load modules
+module purge
+module load Singularity/3.11.3
+export SINGULARITY_CACHEDIR=/nesi/nobackup/vuw03876/
+singularity build SAW_07.1.0.sif docker://stomics/saw:07.1.0
+
+#get genome and annotation file
+referenceDir=/nesi/nobackup/vuw03876/stomics/
+refName=/Reference/mouse
+# make a new directory called reference specie name
+mkdir -p $referenceDir/$refName
+cd $referenceDir/$refName
+mkdir genome genes
+
+cd genome
+wget https://ftp.ensembl.org/pub/release-93/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna.primary_assembly.fa.gz
+gunzip Mus_musculus.GRCm38.dna.primary_assembly.fa.gz
+
+cd ../genes
+wget https://ftp.ensembl.org/pub/release-93/gtf/mus_musculus/Mus_musculus.GRCm38.93.gtf.gz
+gunzip Mus_musculus.GRCm38.93.gtf.gz
+
+#Run : build the genome index file
+referenceDir=/nesi/nobackup/vuw03876/stomics/Reference/mouse
+mkdir $referenceDir/STAR_SJ100
+export SINGULARITY_BIND=$referenceDir
+
+singularity exec <SAW_07.1.0.sif> mapping \
+    --runMode genomeGenerate \
+    --genomeDir $referenceDir/STAR_SJ100 \
+    --genomeFastaFiles $referenceDir/genome/genome.fa \
+    --sjdbGTFfile $referenceDir/genes/genes.gtf \
+    --sjdbOverhang 99 \
+    --runThreadN 12
+#Then you should get the mask file from our website through the slide number(SN)
